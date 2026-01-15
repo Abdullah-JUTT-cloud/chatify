@@ -38,15 +38,15 @@ export const sendMessage = async (req, res) => {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
-    if(!text && !image){
-        return res.status(400).json({ error: "Message content cannot be empty" });
+    if (!text && !image) {
+      return res.status(400).json({ error: "Message content cannot be empty" });
     }
-    if(senderId.equals(receiverId)){
-        return res.status(400).json({ error: "Cannot send message to yourself" });
+    if (senderId.equals(receiverId)) {
+      return res.status(400).json({ error: "Cannot send message to yourself" });
     }
-    const receiverExists=await User.exists({_id:receiverId});
-    if(!receiverExists){
-        return res.status(404).json({ error: "Receiver not found" });
+    const receiverExists = await User.exists({ _id: receiverId });
+    if (!receiverExists) {
+      return res.status(404).json({ error: "Receiver not found" });
     }
     let imageUrl;
     if (image) {
@@ -84,7 +84,9 @@ export const getChatPartners = async (req, res) => {
         )
       ),
     ];
-    const chatPartners= await User.find({ _id: { $in: chatPartnersIds } }).select('-password');
+    const chatPartners = await User.find({
+      _id: { $in: chatPartnersIds },
+    }).select("-password");
     res.status(200).json(chatPartners);
   } catch (error) {
     console.error("Error fetching chat partners:", error);
