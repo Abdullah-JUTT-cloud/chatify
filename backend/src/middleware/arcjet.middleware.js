@@ -17,7 +17,7 @@ export const arcjetProtection = async (req, res, next) => {
         return res.status(403).json({ message: "Access denied." });
       }
     }
-      // check for spoofed bots
+    // check for spoofed bots
     if (decision.results.some(isSpoofedBot)) {
       return res.status(403).json({
         error: "Spoofed bot detected",
