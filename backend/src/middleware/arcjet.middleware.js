@@ -17,10 +17,12 @@ export const arcjetProtection = async (req, res, next) => {
         return res.status(403).json({ message: "Access denied." });
       }
     }
-    if(decision.results.isSpoofedBot()){
-        return res
-        .status(403)
-        .json({ error:"spoofed Bot detected", message: "Access denied: Spoofed bot traffic detected." });
+      // check for spoofed bots
+    if (decision.results.some(isSpoofedBot)) {
+      return res.status(403).json({
+        error: "Spoofed bot detected",
+        message: "Malicious bot activity detected.",
+      });
     }
   } catch (error) {
     console.error("Arcjet Middleware Error:", error);
