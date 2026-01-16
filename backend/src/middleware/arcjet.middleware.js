@@ -24,6 +24,8 @@ export const arcjetProtection = async (req, res, next) => {
         message: "Malicious bot activity detected.",
       });
     }
+
+    next();
   } catch (error) {
     console.error("Arcjet Middleware Error:", error);
     next();
