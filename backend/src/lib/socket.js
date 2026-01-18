@@ -5,17 +5,21 @@ import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 
 
-const app=express();
-const server=http.createServer(app);
+const app = express();
+const server = http.createServer(app);
 
-export const io=new Server(server,{
-    cors:{
-        origin: ENV.CLIENT_URL,
-        credentials: true,
-    }
+export const io = new Server(server, {
+  cors: {
+    origin: ENV.CLIENT_URL,
+    credentials: true,
+  }
 });
 io.use(socketAuthMiddleware);
 const userSocketMap = {}; // {userId:socketId}
+
+export const getReceiverSocketId = (userId) => {
+  return userSocketMap[userId];
+};
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.user.fullName);
@@ -23,10 +27,10 @@ io.on("connection", (socket) => {
   const userId = socket.userId;
   userSocketMap[userId] = socket.id;
 
-  
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  
+
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.user.fullName);
     delete userSocketMap[userId];
@@ -35,4 +39,4 @@ io.on("connection", (socket) => {
 
 });
 
-export {  app, server };
+export { app, server };
