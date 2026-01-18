@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Message from "../models/Message.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import mongoose from "mongoose";
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -20,6 +21,11 @@ export const getMessagesByUserId = async (req, res) => {
   try {
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userToChatId)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
@@ -37,6 +43,11 @@ export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ error: "Invalid receiver ID" });
+    }
+
     const senderId = req.user._id;
     if (!text && !image) {
       return res.status(400).json({ error: "Message content cannot be empty" });
@@ -76,21 +87,56 @@ export const sendMessage = async (req, res) => {
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
-    const messages = await Message.find({
-      $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
-    });
-    const chatPartnersIds = [
-      ...new Set(
-        messages.map((msg) =>
-          msg.senderId.toString() === loggedInUserId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString()
-        )
-      ),
-    ];
-    const chatPartners = await User.find({
-      _id: { $in: chatPartnersIds },
-    }).select("-password");
+
+    const chatPartners = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { senderId: new mongoose.Types.ObjectId(loggedInUserId) },
+            { receiverId: new mongoose.Types.ObjectId(loggedInUserId) },
+          ],
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $project: {
+          partnerId: {
+            $cond: {
+              if: { $eq: ["$senderId", new mongoose.Types.ObjectId(loggedInUserId)] },
+              then: "$receiverId",
+              else: "$senderId",
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$partnerId",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "partnerInfo",
+        },
+      },
+      {
+        $unwind: "$partnerInfo",
+      },
+      {
+        $project: {
+          _id: "$partnerInfo._id",
+          fullName: "$partnerInfo.fullName",
+          email: "$partnerInfo.email",
+          profilePic: "$partnerInfo.profilePic",
+        },
+      },
+    ]);
+
     res.status(200).json(chatPartners);
   } catch (error) {
     console.error("Error fetching chat partners:", error);
