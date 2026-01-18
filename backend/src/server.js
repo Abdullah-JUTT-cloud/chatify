@@ -40,8 +40,15 @@ if (ENV.NODE_ENV === 'production') {
 }
 
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT} in ${ENV.NODE_ENV || 'development'} mode`);
-    console.log("Connecting to MongoDB...");
+    console.log(`🚀 Server is running on port ${PORT} in ${ENV.NODE_ENV || 'development'} mode`);
+
+    if (!ENV.JWT_SECRET) {
+        console.warn("⚠️ WARNING: JWT_SECRET is not defined. Authentication will fail.");
+    }
+    if (!ENV.ARCJET_KEY) {
+        console.warn("⚠️ WARNING: ARCJET_KEY is missing. Protection might be limited.");
+    }
+
     connectDB();
 });
 
